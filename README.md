@@ -4,9 +4,10 @@ An MIT-licensed [Toasty](https://github.com/tokio-rs/toasty) database adapter fo
 
 ## Features
 
-- Implements all 10 `better-auth-rs` adapter operation traits (`UserOps`, `SessionOps`, `AccountOps`, `VerificationOps`, `OrganizationOps`, `MemberOps`, `InvitationOps`, `TwoFactorOps`, `ApiKeyOps`, `PasskeyOps`)
-- Uses framework built-in types as associated types with a conversion layer between ORM models and auth types
-- Supports Turso (SQLite-compatible) via the `toasty-driver-turso` backend
+- Implements `better-auth-rs` adapter operation traits with a conversion layer between ORM models and auth types
+- **Fully implemented:** `UserOps`, `SessionOps`, `AccountOps`, `VerificationOps`
+- **Stub implementations (todo!):** `OrganizationOps`, `MemberOps`, `InvitationOps`, `TwoFactorOps`, `ApiKeyOps`, `PasskeyOps`
+- Supports **SQLite** (file-backed or in-memory) and **Turso** (SQLite-compatible, including cloud embedded replicas)
 
 ## Installation
 
@@ -22,7 +23,7 @@ tokio = { version = "1", features = ["full"] }
 
 ## Usage
 
-### Quick Start (Local Turso)
+### Quick Start (SQLite)
 
 ```rust
 use better_auth::{AuthConfig, BetterAuth};
@@ -34,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Initialize Toasty with the adapter's models
     let db = Db::builder()
         .models(toasty::models!(better_auth_toasty::models::*))
-        .connect("turso:./auth.db")
+        .connect("sqlite:./auth.db")
         .await?;
 
     // 2. Push the schema to create tables
@@ -53,43 +54,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-### Turso Cloud Database
+### Using Turso (Local or Cloud)
 
-[Turso](https://turso.tech) provides a cloud-hosted SQLite-compatible database with edge replication. You can use it with `better-auth-toasty` via an [embedded replica](https://docs.turso.tech/features/embedded-replicas/introduction) that syncs to your local disk.
+You can also use [Turso](https://turso.tech) for a cloud-hosted SQLite-compatible database with edge replication.
 
-#### 1. Create a Turso cloud database
+#### Local Turso file
 
-```bash
-# Install the Turso CLI
-curl -sSfL https://get.tur.so/install.sh | bash
-
-# Log in and create a database
-turso auth login
-turso db create my-auth-db
-
-# Get the database URL and auth token
-turso db show my-auth-db --url
-turso db tokens create my-auth-db
-```
-
-#### 2. Set environment variables
-
-```bash
-export TURSO_DATABASE_URL="libsql://my-auth-db-your-org.turso.io"
-export TURSO_AUTH_TOKEN="your-auth-token"
-```
-
-#### 3. Configure your application
+Replace the connection string with a `turso:` prefix:
 
 ```rust
-use better_auth::{AuthConfig, BetterAuth};
-use better_auth_toasty::ToastyAdapter;
-use toasty::Db;
+let db = Db::builder()
+    .models(toasty::models!(better_auth_toasty::models::*))
+    .connect("turso:./auth.db")
+    .await?;
+```
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // The embedded replica syncs from Turso cloud to a local file.
-    // Toasty connects to the local file via the turso driver.
+#### Turso Cloud with embedded replica
+
+1. **Create a Turso cloud database:**
+
+    ```bash
+    curl -sSfL https://get.tur.so/install.sh | bash
+    turso auth login
+    turso db create my-auth-db
+    turso db show my-auth-db --url
+    turso db tokens create my-auth-db
+    ```
+
+2. **Set environment variables:**
+
+    ```bash
+    export TURSO_DATABASE_URL="libsql://my-auth-db-your-org.turso.io"
+    export TURSO_AUTH_TOKEN="your-auth-token"
+    ```
+
+3. **Configure your application:**
+
+    ```rust
     let db = Db::builder()
         .models(toasty::models!(better_auth_toasty::models::*))
         .connect("turso:./auth.db")
@@ -108,33 +109,51 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .database(adapter)
     .build()
     .await?;
+    ```
 
-    // --- Example: sign up a user ---
-    // let result = auth.sign_up_email("alice@example.com", "password123").await?;
+> **Note:** Toasty's Turso driver supports local file-backed and in-memory databases. For programmatic cloud sync (push/pull), use the [`turso`](https://docs.turso.tech/sdk/rust/quickstart) crate alongside this adapter.
 
-    // --- Example: sign in ---
-    // let session = auth.sign_in_email("alice@example.com", "password123").await?;
+### Connection Strings
 
-    // --- Example: get session from token ---
-    // let user = auth.get_session("session_token_here").await?;
+| Backend | Connection String | Description |
+|---------|------------------|-------------|
+| SQLite (file) | `"sqlite:./auth.db"` | Local SQLite file |
+| Turso (file) | `"turso:./auth.db"` | Local Turso file (SQLite-compatible) |
+| Turso (in-memory) | `"turso::memory:"` | In-memory Turso database |
 
-    Ok(())
-}
-```
+## Axum Example
 
-#### 4. Sync the embedded replica
+A full Axum web server example is available in [`examples/axum_server_toasty.rs`](examples/axum_server_toasty.rs). It demonstrates:
 
-Run the Turso CLI to push/pull data between the local replica and the cloud database:
+- Email/password sign-up and sign-in
+- Session management (get, list, sign-out)
+- Password management (forget, reset, change)
+- Account management (update profile, delete account)
+- Organization creation and listing
+- Protected routes using `CurrentSession<ToastyAdapter>` extractor
+- Public routes using `OptionalSession<ToastyAdapter>` extractor
+- CORS via `tower-http`
+
+Run it with:
 
 ```bash
-# Push local changes to cloud
-turso db shell my-auth-db < /dev/null
-
-# Or use the embedded replica sync in your app via the turso crate directly
-# for programmatic push/pull operations.
+cargo run --example axum_server_toasty
 ```
 
-> **Note:** Toasty's Turso driver currently supports local file-backed and in-memory databases. For programmatic cloud sync (push/pull), use the [`turso`](https://docs.turso.tech/sdk/rust/quickstart) crate alongside this adapter.
+## Testing
+
+The project includes integration tests for both SQLite and Turso backends:
+
+```bash
+# Run all tests
+cargo test
+
+# Run SQLite tests only
+cargo test --test sqlite_tests
+
+# Run Turso tests only
+cargo test --test turso_tests
+```
 
 ## Architecture
 
@@ -153,12 +172,12 @@ turso db shell my-auth-db < /dev/null
                    ▼
 ┌─────────────────────────────────────────────┐
 │           Toasty ORM                         │
-│   toasty-driver-turso (SQLite-compatible)   │
+│   SQLite / Turso (toasty-driver-turso)      │
 └──────────────────┬──────────────────────────┘
                    │
                    ▼
 ┌─────────────────────────────────────────────┐
-│       Turso (local file / embedded replica)  │
+│   SQLite file / Turso local or cloud        │
 └─────────────────────────────────────────────┘
 ```
 
