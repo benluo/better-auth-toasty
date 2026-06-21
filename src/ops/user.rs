@@ -73,50 +73,50 @@ impl UserOps for ToastyAdapter {
             .await
             .map_err(|_| AuthError::UserNotFound)?;
 
+        let mut builder = user.update();
         if let Some(email) = update.email {
-            user.email = Some(email);
+            builder = builder.email(email);
         }
         if let Some(name) = update.name {
-            user.name = Some(name);
+            builder = builder.name(name);
         }
         if let Some(image) = update.image {
-            user.image = Some(image);
+            builder = builder.image(image);
         }
         if let Some(email_verified) = update.email_verified {
-            user.email_verified = email_verified;
+            builder = builder.email_verified(email_verified);
         }
         if let Some(username) = update.username {
-            user.username = Some(username);
+            builder = builder.username(username);
         }
         if let Some(display_username) = update.display_username {
-            user.display_username = Some(display_username);
+            builder = builder.display_username(display_username);
         }
         if let Some(role) = update.role {
-            user.role = Some(role);
+            builder = builder.role(role);
         }
         if let Some(banned) = update.banned {
-            user.banned = banned;
+            builder = builder.banned(banned);
             if !banned {
-                user.ban_reason = None;
-                user.ban_expires = None;
+                builder = builder.ban_reason(None::<String>);
+                builder = builder.ban_expires(None::<i64>);
             }
         }
         if let Some(ban_reason) = update.ban_reason {
-            user.ban_reason = Some(ban_reason);
+            builder = builder.ban_reason(ban_reason);
         }
         if let Some(ban_expires) = update.ban_expires {
-            user.ban_expires = Some(ban_expires.timestamp_millis());
+            builder = builder.ban_expires(ban_expires.timestamp_millis());
         }
         if let Some(two_factor_enabled) = update.two_factor_enabled {
-            user.two_factor_enabled = two_factor_enabled;
+            builder = builder.two_factor_enabled(two_factor_enabled);
         }
         if let Some(metadata) = update.metadata {
-            user.metadata = serde_json::to_string(&metadata).ok();
+            builder = builder.metadata(serde_json::to_string(&metadata).ok());
         }
 
-        user.updated_at = crate::conversions::now_millis();
-
-        user.update()
+        builder
+            .updated_at(crate::conversions::now_millis())
             .exec(&mut db)
             .await
             .map_err(db_err)?;

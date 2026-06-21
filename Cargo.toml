@@ -23,6 +23,7 @@ uuid = { version = "1", features = ["v4"] }
 [dev-dependencies]
 axum = "0.8"
 better-auth = { version = "0.10", default-features = false, features = ["rustls", "axum"] }
+toasty = { version = "0.7", features = ["sqlite", "turso"] }
 tower-http = { version = "0.6", features = ["cors"] }
 tracing-subscriber = "0.3"
 tokio = { version = "1", features = ["full"] }

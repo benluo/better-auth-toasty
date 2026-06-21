@@ -74,31 +74,34 @@ impl AccountOps for ToastyAdapter {
             .await
             .map_err(|_| AuthError::NotFound(format!("account {id} not found")))?;
 
+        let mut builder = account.update();
         if let Some(access_token) = update.access_token {
-            account.access_token = Some(access_token);
+            builder = builder.access_token(access_token);
         }
         if let Some(refresh_token) = update.refresh_token {
-            account.refresh_token = Some(refresh_token);
+            builder = builder.refresh_token(refresh_token);
         }
         if let Some(id_token) = update.id_token {
-            account.id_token = Some(id_token);
+            builder = builder.id_token(id_token);
         }
         if let Some(dt) = update.access_token_expires_at {
-            account.access_token_expires_at = Some(dt.timestamp_millis());
+            builder = builder.access_token_expires_at(dt.timestamp_millis());
         }
         if let Some(dt) = update.refresh_token_expires_at {
-            account.refresh_token_expires_at = Some(dt.timestamp_millis());
+            builder = builder.refresh_token_expires_at(dt.timestamp_millis());
         }
         if let Some(scope) = update.scope {
-            account.scope = Some(scope);
+            builder = builder.scope(scope);
         }
         if let Some(password) = update.password {
-            account.password = Some(password);
+            builder = builder.password(password);
         }
 
-        account.updated_at = crate::conversions::now_millis();
-
-        account.update().exec(&mut db).await.map_err(db_err)?;
+        builder
+            .updated_at(crate::conversions::now_millis())
+            .exec(&mut db)
+            .await
+            .map_err(db_err)?;
 
         AccountModel::get_by_id(&mut db, id)
             .await

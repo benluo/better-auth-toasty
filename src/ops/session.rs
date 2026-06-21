@@ -72,9 +72,12 @@ impl SessionOps for ToastyAdapter {
         let mut session = SessionModel::get_by_token(&mut db, token)
             .await
             .map_err(|_| AuthError::SessionNotFound)?;
-        session.expires_at = expires_at.timestamp_millis();
-        session.updated_at = now_millis();
-        session.update().exec(&mut db).await.map_err(db_err)?;
+        session.update()
+            .expires_at(expires_at.timestamp_millis())
+            .updated_at(now_millis())
+            .exec(&mut db)
+            .await
+            .map_err(db_err)?;
         Ok(())
     }
 
@@ -123,9 +126,12 @@ impl SessionOps for ToastyAdapter {
         let mut session = SessionModel::get_by_token(&mut db, token)
             .await
             .map_err(|_| AuthError::SessionNotFound)?;
-        session.active_organization_id = organization_id.map(String::from);
-        session.updated_at = now_millis();
-        session.update().exec(&mut db).await.map_err(db_err)?;
+        session.update()
+            .active_organization_id(organization_id.map(String::from))
+            .updated_at(now_millis())
+            .exec(&mut db)
+            .await
+            .map_err(db_err)?;
 
         SessionModel::get_by_token(&mut db, token)
             .await
