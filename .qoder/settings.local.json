@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo doc --document-private-items 2>&1 | head -50)",
+      "Bash(find ~/.cargo/registry/src -path \"*/better-auth-*/src/lib.rs\" 2>/dev/null | head -5)"
+    ]
+  }
+}
