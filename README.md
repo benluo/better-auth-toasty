@@ -14,7 +14,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-better-auth-toasty = "0.1"
+better-auth-toasty = { git = "https://github.com/benluo/better-auth-toasty" }
 better-auth = { version = "0.10", features = ["rustls"] }
 toasty = "0.7"
 tokio = { version = "1", features = ["full"] }

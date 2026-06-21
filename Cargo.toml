@@ -19,3 +19,14 @@ async-trait = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+axum = "0.8"
+better-auth = { version = "0.10", default-features = false, features = ["rustls", "axum"] }
+tower-http = { version = "0.6", features = ["cors"] }
+tracing-subscriber = "0.3"
+tokio = { version = "1", features = ["full"] }
+
+[[example]]
+name = "axum_server_toasty"
+required-features = []
