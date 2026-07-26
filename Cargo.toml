@@ -13,7 +13,7 @@ better-auth = { version = "0.10", default-features = false, features = [
     "rustls",
 ] }
 better-auth-core = { version = "0.10", default-features = false }
-toasty = "0.7"
+toasty = { version = "0.9", features = ["sqlite", "turso"] }
 chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
 serde = { version = "1", features = ["derive"] }
@@ -23,8 +23,7 @@ uuid = { version = "1", features = ["v4"] }
 [dev-dependencies]
 axum = "0.8"
 better-auth = { version = "0.10", default-features = false, features = ["rustls", "axum"] }
-toasty = { version = "0.7", features = ["sqlite", "turso"] }
-tower-http = { version = "0.6", features = ["cors"] }
+tower-http = { version = "0.7", features = ["cors"] }
 tracing-subscriber = "0.3"
 tokio = { version = "1", features = ["full"] }
 
